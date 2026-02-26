@@ -1,0 +1,41 @@
+# Environment files - NEVER commit these
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env
+db-password.txt
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Node
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+
+# Docker
+*.tar
+
+# MacOS
+.DS_Store
+__MACOSX/
+
+# GCP
+cloud_sql_proxy
+*.json.bak
+
+# Backup files
+*.backup
+*.bak
+*.old
+App.jsx.backup
+App.jsx.old
+app.jsx.backup2
+App.jsx.Codexbackup

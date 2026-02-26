@@ -1,0 +1,90 @@
+# Google Cloud Platform Deployment Configuration
+# For deploying Land Development Tracker to GCP
+
+# ===========================================
+# GCP CLOUD RUN DEPLOYMENT
+# ===========================================
+
+# backend-service.yaml
+# Cloud Run service configuration for FastAPI backend
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: landdev-backend
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '10'
+        autoscaling.knative.dev/minScale: '1'
+        run.googleapis.com/cloudsql-instances: 'PROJECT_ID:REGION:INSTANCE_NAME'
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: gcr.io/PROJECT_ID/landdev-backend:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: landdev-secrets
+              key: database-url
+        - name: SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: landdev-secrets
+              key: secret-key
+        resources:
+          limits:
+            cpu: '2'
+            memory: 2Gi
+          requests:
+            cpu: '1'
+            memory: 512Mi
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
+---
+# frontend-service.yaml
+# Cloud Run service configuration for React frontend
+
+apiVersion: serving.knative.dev/v1
+kind: Service
+metadata:
+  name: landdev-frontend
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        autoscaling.knative.dev/maxScale: '5'
+        autoscaling.knative.dev/minScale: '1'
+    spec:
+      containerConcurrency: 80
+      containers:
+      - image: gcr.io/PROJECT_ID/landdev-frontend:latest
+        ports:
+        - containerPort: 80
+        env:
+        - name: VITE_API_URL
+          value: 'https://backend-url.run.app'
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+          requests:
+            cpu: '0.5'
+            memory: 256Mi
