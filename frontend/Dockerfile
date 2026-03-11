@@ -3,7 +3,7 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-ARG VITE_API_URL=https://landdev-backend-549399916572.us-central1.run.app
+ARG VITE_API_URL=https://landdev-backend-1041131830576.us-central1.run.app
 ENV VITE_API_URL=$VITE_API_URL
 RUN npm run build
 

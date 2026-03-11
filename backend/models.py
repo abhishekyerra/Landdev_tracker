@@ -216,6 +216,20 @@ class Document(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
+class DocumentAIAnalysis(Base):
+    __tablename__ = "document_ai_analysis"
+
+    analysis_id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    document_id = Column(UUID(as_uuid=True), ForeignKey("documents.document_id", ondelete="CASCADE"), nullable=False)
+    project_id = Column(UUID(as_uuid=True), ForeignKey("projects.project_id", ondelete="CASCADE"), nullable=False)
+    status = Column(String(30), nullable=False, default="queued")
+    prompt = Column(Text)
+    extracted_tasks_json = Column(JSONB)
+    ai_instruction = Column(Text)
+    error = Column(Text)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
+
 class Task(Base):
     __tablename__ = "tasks"
     
@@ -227,6 +241,7 @@ class Task(Base):
     description = Column(Text)
     status = Column(String(50), default='todo')
     priority = Column(String(20), default='medium')
+    completion_percentage = Column(Integer, default=0)
     assigned_to = Column(UUID(as_uuid=True), ForeignKey('users.user_id'))
     due_date = Column(Date)
     completed_date = Column(Date)

@@ -122,12 +122,29 @@ echo -n "$(openssl rand -base64 32)" | gcloud secrets create jwt-secret-key --da
 echo -n "postgresql://$DB_USER:$DB_PASSWORD@/$DB_NAME?host=/cloudsql/$CONNECTION_NAME" | \
   gcloud secrets create database-url --data-file=- --quiet 2>/dev/null || echo "database-url already exists"
 
-# Anthropic API key
-read -p "Enter your Anthropic API Key (or press Enter to skip): " ANTHROPIC_KEY
-if [ ! -z "$ANTHROPIC_KEY" ]; then
-    echo -n "$ANTHROPIC_KEY" | gcloud secrets create anthropic-api-key --data-file=- --quiet 2>/dev/null || echo "anthropic-api-key already exists"
-    echo -e "${GREEN}✅ Anthropic API key stored${NC}"
+# Rel GPT API key
+read -p "Enter your Rel GPT API Key (or press Enter to skip): " REL_GPT_KEY
+if [ ! -z "$REL_GPT_KEY" ]; then
+    echo -n "$REL_GPT_KEY" | gcloud secrets create rel-gpt-api-key --data-file=- --quiet 2>/dev/null || echo "rel-gpt-api-key already exists"
+    echo -e "${GREEN}✅ Rel GPT API key stored${NC}"
 fi
+
+# GCS bucket for file uploads
+FILE_BUCKET="${PROJECT_ID}-landdev-files"
+echo ""
+echo "📦 File Storage (GCS)"
+echo "Bucket: $FILE_BUCKET"
+if gsutil ls -b "gs://$FILE_BUCKET" &> /dev/null; then
+    echo "Bucket already exists"
+else
+    gsutil mb -p "$PROJECT_ID" -l "$REGION" "gs://$FILE_BUCKET"
+    echo -e "${GREEN}✅ Created bucket: gs://$FILE_BUCKET${NC}"
+fi
+
+# Grant Cloud Run runtime account access to bucket
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')
+RUNTIME_SA="${PROJECT_NUMBER}-compute@developer.gserviceaccount.com"
+gsutil iam ch "serviceAccount:${RUNTIME_SA}:roles/storage.objectAdmin" "gs://$FILE_BUCKET"
 
 echo ""
 echo "🐳 Building Backend..."
@@ -149,7 +166,8 @@ gcloud run deploy landdev-backend \
   --region $REGION \
   --allow-unauthenticated \
   --add-cloudsql-instances $CONNECTION_NAME \
-  --set-secrets DATABASE_URL=database-url:latest,SECRET_KEY=jwt-secret-key:latest,ANTHROPIC_API_KEY=anthropic-api-key:latest \
+  --set-secrets DATABASE_URL=database-url:latest,SECRET_KEY=jwt-secret-key:latest,REL_GPT_API_KEY=rel-gpt-api-key:latest \
+  --set-env-vars REL_GPT_MODEL=gpt-4.1-mini,GCS_BUCKET_NAME=$FILE_BUCKET,GCS_SIGNED_URL_TTL_SECONDS=3600 \
   --memory 512Mi \
   --cpu 1 \
   --max-instances 10 \
@@ -165,12 +183,27 @@ echo ""
 echo "🎨 Building Frontend..."
 cd frontend
 
-# Build with backend URL
+# Build with backend URL (Docker build-arg via Cloud Build config)
+cat > cloudbuild.frontend.yaml <<EOF
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - -t
+      - gcr.io/$PROJECT_ID/landdev-frontend
+      - --build-arg
+      - VITE_API_URL=$BACKEND_URL
+      - .
+images:
+  - gcr.io/$PROJECT_ID/landdev-frontend
+EOF
+
 gcloud builds submit \
-  --tag gcr.io/$PROJECT_ID/landdev-frontend \
+  --config cloudbuild.frontend.yaml \
   --timeout=20m \
-  --substitutions=_VITE_API_URL=$BACKEND_URL \
   --quiet
+
+rm -f cloudbuild.frontend.yaml
 
 echo -e "${GREEN}✅ Frontend built${NC}"
 

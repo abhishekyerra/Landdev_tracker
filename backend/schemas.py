@@ -298,3 +298,106 @@ class VendorResponse(BaseModel):
     
     class Config:
         from_attributes = True
+
+
+# ============================================
+# LAND ANALYSIS SCHEMAS
+# ============================================
+
+class CostLineItemInput(BaseModel):
+    name: str
+    quantity: Decimal = Field(..., gt=0)
+    unit_cost: Decimal = Field(..., ge=0)
+
+
+class ConstructionCostEstimateRequest(BaseModel):
+    project_id: Optional[uuid.UUID] = None
+    hard_cost_items: List[CostLineItemInput]
+    soft_cost_rate: Decimal = Field(default=Decimal("0.12"), ge=0, le=1)
+    contingency_rate: Decimal = Field(default=Decimal("0.10"), ge=0, le=1)
+    financing_rate: Decimal = Field(default=Decimal("0.05"), ge=0, le=1)
+
+
+class ConstructionCostEstimateResponse(BaseModel):
+    hard_cost_total: Decimal
+    soft_cost_total: Decimal
+    contingency_total: Decimal
+    financing_total: Decimal
+    total_project_cost: Decimal
+    insight: Optional[str] = None
+
+
+class InvestmentReturnRequest(BaseModel):
+    land_price: Decimal = Field(..., ge=0)
+    development_cost: Decimal = Field(..., ge=0)
+    projected_sale_price: Optional[Decimal] = Field(default=None, ge=0)
+    projected_annual_revenue: Optional[Decimal] = Field(default=None, ge=0)
+    projected_annual_operating_cost: Decimal = Field(default=Decimal("0"), ge=0)
+    holding_years: int = Field(default=2, ge=1, le=40)
+    discount_rate: Decimal = Field(default=Decimal("0.10"), ge=0, le=1)
+
+    @validator("projected_sale_price", always=True)
+    def require_sale_or_revenue(cls, value, values):
+        if value is None and values.get("projected_annual_revenue") is None:
+            raise ValueError("Either projected_sale_price or projected_annual_revenue is required")
+        return value
+
+
+class InvestmentReturnResponse(BaseModel):
+    total_investment: Decimal
+    projected_profit: Decimal
+    roi_percent: Decimal
+    annual_cash_flow: Decimal
+    npv: Decimal
+    payback_years: Optional[Decimal] = None
+    insight: Optional[str] = None
+
+
+class LandFeasibilityRequest(BaseModel):
+    zoning_permitted: bool
+    utility_access: bool
+    road_access: bool
+    flood_zone: bool = False
+    slope_percent: Decimal = Field(default=Decimal("5"), ge=0)
+    environmental_risk: str = Field(default="medium", pattern="^(low|medium|high)$")
+    market_strength: str = Field(default="medium", pattern="^(low|medium|high)$")
+    target_roi_percent: Decimal = Field(default=Decimal("15"), ge=0)
+    estimated_roi_percent: Decimal = Field(default=Decimal("12"))
+
+
+class LandFeasibilityResponse(BaseModel):
+    feasibility_score: int
+    classification: str
+    blockers: List[str]
+    recommendations: List[str]
+    insight: Optional[str] = None
+
+
+class TwoPhasePlanRequest(BaseModel):
+    start_date: date
+    total_budget: Decimal = Field(..., gt=0)
+    total_lots: int = Field(default=60, gt=0)
+    phase1_lots: int = Field(default=30, gt=0)
+    contingency_rate: Decimal = Field(default=Decimal("0.10"), ge=0, le=0.5)
+    ai_instruction: Optional[str] = None
+
+    @validator("phase1_lots")
+    def phase1_lots_not_more_than_total(cls, value, values):
+        total_lots = values.get("total_lots", 60)
+        if value > total_lots:
+            raise ValueError("phase1_lots cannot exceed total_lots")
+        return value
+
+
+class TwoPhasePlanResponse(BaseModel):
+    project_id: uuid.UUID
+    start_date: date
+    total_budget: Decimal
+    phase1_budget: Decimal
+    phase2_budget: Decimal
+    phase1_start: date
+    phase1_end: date
+    phase2_start: date
+    phase2_end: date
+    tasks_created: int
+    ai_agent_summary: Optional[dict] = None

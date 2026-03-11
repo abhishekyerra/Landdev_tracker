@@ -181,6 +181,7 @@ CREATE TABLE tasks (
     description TEXT,
     status VARCHAR(50) DEFAULT 'todo' CHECK (status IN ('todo', 'in_progress', 'review', 'completed', 'blocked', 'cancelled')),
     priority VARCHAR(20) DEFAULT 'medium' CHECK (priority IN ('low', 'medium', 'high', 'critical')),
+    completion_percentage INTEGER DEFAULT 0 CHECK (completion_percentage >= 0 AND completion_percentage <= 100),
     assigned_to UUID REFERENCES users(user_id),
     due_date DATE,
     completed_date DATE,

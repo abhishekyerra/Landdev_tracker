@@ -1,0 +1,28 @@
+GCP Deployment Information
+==========================
+
+Project ID: landdev-tracker-1772933478
+Region: us-central1
+
+URLs:
+  Frontend: https://landdev-frontend-ptbpj26qja-uc.a.run.app
+  Backend: https://landdev-backend-ptbpj26qja-uc.a.run.app
+
+Database:
+  Instance: landdev-db
+  Connection: landdev-tracker-1772933478:us-central1:landdev-db
+  Database: landdev_tracker
+  User: landdev_user
+  Password: (see db-password.txt)
+
+Login:
+  Email: admin@landdev.com
+  Password: Password123!
+
+Deployment Date: Sun Mar  8 23:33:55 CDT 2026
+
+Monthly Cost Estimate: $15-25
+- Cloud SQL (db-f1-micro): $7-10
+- Backend Cloud Run: $3-5
+- Frontend Cloud Run: $2-3
+- Misc (storage, build): $1-2

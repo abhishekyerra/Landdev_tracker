@@ -37,6 +37,17 @@ spec:
             secretKeyRef:
               name: landdev-secrets
               key: secret-key
+        - name: REL_GPT_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: landdev-secrets
+              key: rel-gpt-api-key
+        - name: REL_GPT_MODEL
+          value: gpt-4.1-mini
+        - name: GCS_BUCKET_NAME
+          value: landdev-files-bucket
+        - name: GCS_SIGNED_URL_TTL_SECONDS
+          value: "3600"
         resources:
           limits:
             cpu: '2'

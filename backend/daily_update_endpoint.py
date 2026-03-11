@@ -7,6 +7,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 import json
+from rel_gpt import rel_gpt_client
 
 # Add this Pydantic model near your other models
 class DailyUpdateInput(BaseModel):
@@ -51,11 +52,9 @@ async def submit_daily_update(
             weather_data = {}
         
         # 3. Process with AI if available
-        anthropic_api_key = os.getenv("ANTHROPIC_API_KEY")
+        rel_gpt_api_key = os.getenv("REL_GPT_API_KEY")
         
-        if anthropic_api_key:
-            from anthropic import Anthropic
-            client = Anthropic(api_key=anthropic_api_key)
+        if rel_gpt_api_key:
             
             # Get active phase details
             active_phase = next((p for p in phases if p.status == 'in_progress'), None)
@@ -105,17 +104,10 @@ Based on this daily update, provide a comprehensive analysis in the following JS
 
 Provide ONLY the JSON response, no additional text."""
 
-            # Call Claude API
-            message = client.messages.create(
-                model="claude-sonnet-4-20250514",
+            ai_response = rel_gpt_client.generate_text(
+                user_prompt=context,
                 max_tokens=2000,
-                messages=[{
-                    "role": "user",
-                    "content": context
-                }]
-            )
-            
-            ai_response = message.content[0].text
+            ) or ""
             
             # Parse AI response
             try:
@@ -201,9 +193,9 @@ Provide ONLY the JSON response, no additional text."""
             
             return {
                 "status": "success",
-                "message": "Daily update saved (AI analysis requires ANTHROPIC_API_KEY)",
+                "message": "Daily update saved (AI analysis requires REL_GPT_API_KEY)",
                 "analysis": {
-                    "strategic_guidance": "Update saved successfully. Enable AI analysis by adding ANTHROPIC_API_KEY to environment variables."
+                    "strategic_guidance": "Update saved successfully. Enable AI analysis by adding REL_GPT_API_KEY to environment variables."
                 }
             }
             
