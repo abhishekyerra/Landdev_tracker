@@ -124,6 +124,10 @@ pip install -r requirements.txt
 cat > .env << EOF
 DATABASE_URL=postgresql://landdev_user:landdev_password@localhost:5432/landdev_tracker
 SECRET_KEY=your-secret-key-here
+REL_GPT_API_KEY=your-rel-gpt-api-key
+REL_GPT_MODEL=gpt-4.1-mini
+GCS_BUCKET_NAME=your-gcs-bucket-name
+GCS_SIGNED_URL_TTL_SECONDS=3600
 EOF
 
 # Run the backend
@@ -259,6 +263,19 @@ npm run dev
 - `GET /api/dashboard/overview` - Overall statistics
 - `GET /api/dashboard/projects` - Project dashboard data
 
+### AI + Analysis
+- `GET /api/ai/recommendations/{project_id}` - Rel GPT project recommendations
+- `POST /api/analysis/construction-cost-estimate` - Construction cost estimator
+- `POST /api/analysis/investment-return-predictor` - Investment return predictor
+- `POST /api/analysis/land-feasibility-agent` - Land feasibility agent
+- `POST /api/projects/{id}/upload-files` - Upload project docs to storage + optional AI extraction
+- `POST /api/projects/{id}/documents/analyze-all` - Analyze all uploaded docs and generate tasks
+- `GET /api/projects/{id}/ai/tasks-from-docs` - List AI analysis runs and extracted tasks
+
+### Document Storage
+- In Cloud Run, files are persisted in Google Cloud Storage (`GCS_BUCKET_NAME`).
+- Metadata is tracked in the `documents` table and analysis runs in `document_ai_analysis`.
+
 Full API documentation available at: `http://localhost:8000/docs`
 
 ## 🌐 Deployment to GCP
@@ -358,3 +375,4 @@ For issues or questions:
 ---
 
 Built with ❤️ for land development professionals
+# ABH--Land-_development
